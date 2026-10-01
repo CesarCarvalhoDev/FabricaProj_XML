@@ -1,0 +1,17 @@
+string pasta = @"C:\Users\WIN11\Downloads\XML\xmlaula";
+string[] arquivos = Directory.GetFiles(pasta);
+
+foreach (string arquivo in arquivos)
+{
+    string xml = arquivo.Substring(37, 44);
+    Console.WriteLine(xml);
+
+    string modelo_da_nota = xml.Substring(20, 2);
+    Console.WriteLine(modelo_da_nota);
+
+    if (modelo_da_nota == "65")
+    {
+
+    }
+
+}
