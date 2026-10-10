@@ -53,73 +53,91 @@ namespace ConsoleApp1
             return notas_modelo_65.ToArray();
         }
 
-        public static List<Dictionary<string, string>> ValidarDestNota(List<string> notasModelo65)
+        public static List<string> ValidarDestNota(List<string> notasModelo65)
         {
             var resultado = new List<Dictionary<string, string>>();
+            var notasSemDest = new List<string>();
+            
 
             foreach (var notaModelo65 in notasModelo65)
             {
-                string chaveModelo65 = Path.Combine(@"C:\XmlNfce", notaModelo65 + ".xml");
-
-                string conteudoDoXml = File.ReadAllText(chaveModelo65);
-
-
-
-
+                string caminhoXml = Path.Combine(@"C:\XmlNfce", notaModelo65 + ".xml");
+                string conteudoDoXml = File.ReadAllText(caminhoXml);
                 if (!conteudoDoXml.Contains("<dest>"))
                 {
-                    string data = conteudoDoXml.Substring(conteudoDoXml.IndexOf("<dhEmi>") + 7, 7);
-                    string serie = notaModelo65.Substring(22, 4);
-                    string primeiro5DigitosCnpj = notaModelo65.Substring(6, 5);
-                    Console.WriteLine(primeiro5DigitosCnpj);
-                    var item = new Dictionary<string, string>
-                        {
-                            { "Chave",  notaModelo65    },
-                            { "Serie",  serie   },
-                            { "Data",   data    },
-                            { "CnpjCurto",   primeiro5DigitosCnpj    }
-                        };
-
-                    resultado.Add(item);
+                    notasSemDest.Add(notaModelo65);
                 }
             }
+            return notasSemDest;
+        }
+
+        public static List<string> FiltrarPorCompetencia(string dataBusca, List<string> notasSemDest)
+        {
+            IEnumerable<string> query = notasSemDest; 
+
+            if (!string.IsNullOrWhiteSpace(dataBusca))
+            {
+                query = query.Where(chaveNota => 
+                {
+                    string caminhoCompleto = Path.Combine(@"C:\XmlNfce", chaveNota + ".xml");
+
+                    if (!File.Exists(caminhoCompleto))
+                        return false;
+
+                    string conteudoDoXml = File.ReadAllText(caminhoCompleto); 
+
+                    int inicio = conteudoDoXml.IndexOf("<dhEmi>"); 
+                    int fim = conteudoDoXml.IndexOf("</dhEmi>");
+
+                    if (inicio != -1 && fim > inicio)
+                    {
+                        string dhEmi = conteudoDoXml.Substring(inicio + 7, fim - (inicio + 7));
+                        return dhEmi.Contains(dataBusca);
+                    }
+
+                    return false;
+                });
+            }
+
+            return query.ToList();
+        }
+
+        public static List<Dictionary<string, string>> ExtrairDadosNotas(List<string> notasFiltradas)
+        {
+            var resultado = new List<Dictionary<string, string>>();
+
+            foreach (string chaveNota in notasFiltradas)
+            {
+                string chaveNotaXml = Path.Combine(@"C:\XmlNfce", chaveNota + ".xml");
+                string conteudoDoXml = File.ReadAllText(chaveNotaXml);
+                
+                string data = conteudoDoXml.Substring(conteudoDoXml.IndexOf("<dhEmi>") + 7, 7);
+                string serie = chaveNota.Substring(22, 3); // Série na chave tem 3 dígitos
+                string primeiro5DigitosCnpj = chaveNota.Substring(6, 5);
+
+                var item = new Dictionary<string, string>
+                {
+                    { "Chave", chaveNota },
+                    { "Serie", serie },
+                    { "Data", data },
+                    { "CnpjCurto", primeiro5DigitosCnpj }
+                };
+                resultado.Add(item);
+            }
+
             return resultado;
         }
 
-        static void Main(string[] args)
+        public static void SalvarRelatorioNotas(List<Dictionary<string, string>> dadosNotasFiltradas)
         {
-            var chavesXml = ExtrairChaveXML();
-            var notasModelo65 = ValidarModeloNota(new List<string>(chavesXml));
-            var notasSemDest = ValidarDestNota(new List<string>(notasModelo65));
-
-            Console.WriteLine($"Total de notas sem destinatário: {notasSemDest.Count}\n");
-            foreach (var nota in notasSemDest)
+            Console.WriteLine($"\n{dadosNotasFiltradas.Count} nota(s) encontrada(s):");
+            foreach (var n in dadosNotasFiltradas)
             {
-                Console.WriteLine($"Chave: {nota["Chave"]} | Série: {nota["Serie"]} | Data: {nota["Data"]} | Primeiros 5 dígitos do CNPJ: {nota["CnpjCurto"]}");
+                Console.WriteLine($"Data {n["Data"]} | Chave {n["Chave"]}");
             }
 
-            Console.Write("\nDigite a série para filtrar (Enter para ignorar): ");
-            string serieBusca = Console.ReadLine();
-
-            Console.Write("Digite a data para filtrar (ex.: 2024, 2024-01, 2024-01-15) (Enter para ignorar): ");
-            string dataBusca = Console.ReadLine();
-
-            IEnumerable<Dictionary<string, string>> query = notasSemDest;
-
-            if (!string.IsNullOrWhiteSpace(serieBusca))
-                query = query.Where(n => n["Serie"].Contains(serieBusca));
-
-            if (!string.IsNullOrWhiteSpace(dataBusca))
-                query = query.Where(n => n["Data"].Contains(dataBusca));
-
-            var filtradas = query.ToList();
-
-            Console.WriteLine($"\n{filtradas.Count} nota(s) encontrada(s):");
-            foreach (var n in filtradas)
-                Console.WriteLine($"  Série {n["Serie"]} | Data {n["Data"]} | Chave {n["Chave"]}");
-
-            string cnpjCurto = filtradas.Count > 0 ? filtradas[0]["CnpjCurto"] : "00000";
-            string dataPrimeiraNota = filtradas.Count > 0 ? filtradas[0]["Data"] : "";
+            string cnpjCurto = dadosNotasFiltradas.Count > 0 ? dadosNotasFiltradas[0]["CnpjCurto"] : "00000";
+            string dataPrimeiraNota = dadosNotasFiltradas.Count > 0 ? dadosNotasFiltradas[0]["Data"] : "";
 
             string mes = "00";
             string ano = "0000";
@@ -131,14 +149,13 @@ namespace ConsoleApp1
             }
 
             string nomeArquivo = $"{mes}{ano}{cnpjCurto}.txt";
-
             string caminhoSaida = Path.Combine(@"C:\XmlNfce", nomeArquivo);
 
             var linhas = new List<string>();
-            linhas.Add($"Total de notas encontradas: {filtradas.Count}");
+            linhas.Add($"Total de notas encontradas: {dadosNotasFiltradas.Count}");
             linhas.Add("");
 
-            foreach (var n in filtradas)
+            foreach (var n in dadosNotasFiltradas)
             {
                 linhas.Add($"Série {n["Serie"]} | Data {n["Data"]} | Chave {n["Chave"]}");
             }
@@ -146,6 +163,28 @@ namespace ConsoleApp1
             File.WriteAllLines(caminhoSaida, linhas);
 
             Console.WriteLine($"\nResultado salvo em: {caminhoSaida}");
+    }
+
+        static void Main(string[] args)
+        {
+            var chavesXml = ExtrairChaveXML();
+            var notasModelo65 = ValidarModeloNota(new List<string>(chavesXml));
+            var notasSemDest = ValidarDestNota(new List<string>(notasModelo65));
+
+            // Console.WriteLine($"Total de notas sem destinatário: {notasSemDest.Count}\n");
+            // foreach (var nota in notasSemDest)
+            // {
+            //     Console.WriteLine($"Chave: {nota["Chave"]} | Série: {nota["Serie"]} | Data: {nota["Data"]} | Primeiros 5 dígitos do CNPJ: {nota["CnpjCurto"]}");
+            // }
+
+            Console.Write("\nDigite a série para filtrar (Enter para ignorar): ");
+            string serieBusca = Console.ReadLine();
+
+            var notasFiltradas = FiltrarPorCompetencia(serieBusca, new List<string>(notasSemDest));
+
+            var dadosNotasFiltradas = ExtrairDadosNotas(new List<string>(notasFiltradas));
+
+            SalvarRelatorioNotas(dadosNotasFiltradas);
         }
     }
 }
