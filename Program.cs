@@ -171,16 +171,10 @@ namespace ConsoleApp1
             var notasModelo65 = ValidarModeloNota(new List<string>(chavesXml));
             var notasSemDest = ValidarDestNota(new List<string>(notasModelo65));
 
-            // Console.WriteLine($"Total de notas sem destinatário: {notasSemDest.Count}\n");
-            // foreach (var nota in notasSemDest)
-            // {
-            //     Console.WriteLine($"Chave: {nota["Chave"]} | Série: {nota["Serie"]} | Data: {nota["Data"]} | Primeiros 5 dígitos do CNPJ: {nota["CnpjCurto"]}");
-            // }
+            Console.Write("\nDigite a competência para filtrar (Enter para ignorar): ");
+            string dataCompetencia = Console.ReadLine();
 
-            Console.Write("\nDigite a série para filtrar (Enter para ignorar): ");
-            string serieBusca = Console.ReadLine();
-
-            var notasFiltradas = FiltrarPorCompetencia(serieBusca, new List<string>(notasSemDest));
+            var notasFiltradas = FiltrarPorCompetencia(dataCompetencia, new List<string>(notasSemDest));
 
             var dadosNotasFiltradas = ExtrairDadosNotas(new List<string>(notasFiltradas));
 
