@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using System.Xml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ConsoleApp1
 {
@@ -55,9 +55,8 @@ namespace ConsoleApp1
 
         public static List<string> ValidarDestNota(List<string> notasModelo65)
         {
-            var resultado = new List<Dictionary<string, string>>();
             var notasSemDest = new List<string>();
-            
+
 
             foreach (var notaModelo65 in notasModelo65)
             {
@@ -73,20 +72,20 @@ namespace ConsoleApp1
 
         public static List<string> FiltrarPorCompetencia(string dataBusca, List<string> notasSemDest)
         {
-            IEnumerable<string> query = notasSemDest; 
+            IEnumerable<string> query = notasSemDest;
 
             if (!string.IsNullOrWhiteSpace(dataBusca))
             {
-                query = query.Where(chaveNota => 
+                query = query.Where(chaveNota =>
                 {
                     string caminhoCompleto = Path.Combine(@"C:\XmlNfce", chaveNota + ".xml");
 
                     if (!File.Exists(caminhoCompleto))
                         return false;
 
-                    string conteudoDoXml = File.ReadAllText(caminhoCompleto); 
+                    string conteudoDoXml = File.ReadAllText(caminhoCompleto);
 
-                    int inicio = conteudoDoXml.IndexOf("<dhEmi>"); 
+                    int inicio = conteudoDoXml.IndexOf("<dhEmi>");
                     int fim = conteudoDoXml.IndexOf("</dhEmi>");
 
                     if (inicio != -1 && fim > inicio)
@@ -110,7 +109,7 @@ namespace ConsoleApp1
             {
                 string chaveNotaXml = Path.Combine(@"C:\XmlNfce", chaveNota + ".xml");
                 string conteudoDoXml = File.ReadAllText(chaveNotaXml);
-                
+
                 string data = conteudoDoXml.Substring(conteudoDoXml.IndexOf("<dhEmi>") + 7, 7);
                 string serie = chaveNota.Substring(22, 3); // Série na chave tem 3 dígitos
                 string primeiro5DigitosCnpj = chaveNota.Substring(6, 5);
@@ -130,40 +129,33 @@ namespace ConsoleApp1
 
         public static void SalvarRelatorioNotas(List<Dictionary<string, string>> dadosNotasFiltradas)
         {
-            Console.WriteLine($"\n{dadosNotasFiltradas.Count} nota(s) encontrada(s):");
-            foreach (var n in dadosNotasFiltradas)
+            
+            if (dadosNotasFiltradas.Count == 0)
             {
-                Console.WriteLine($"Data {n["Data"]} | Chave {n["Chave"]}");
+                Console.WriteLine("\nNenhuma nota encontrada para salvar.");
+                return;
             }
 
-            string cnpjCurto = dadosNotasFiltradas.Count > 0 ? dadosNotasFiltradas[0]["CnpjCurto"] : "00000";
-            string dataPrimeiraNota = dadosNotasFiltradas.Count > 0 ? dadosNotasFiltradas[0]["Data"] : "";
+            string data = dadosNotasFiltradas[0]["Data"];
+            string cnpj = dadosNotasFiltradas[0]["CnpjCurto"];
 
-            string mes = "00";
-            string ano = "0000";
+            string ano = data.Substring(0, 4);
+            string mes = data.Substring(5, 2);
+            string caminhoSaida = $@"C:\XmlNfce\{mes}{ano}{cnpj}.txt";
 
-            if (!string.IsNullOrWhiteSpace(dataPrimeiraNota) && dataPrimeiraNota.Length >= 7)
+            var relatorio = new
             {
-                ano = dataPrimeiraNota.Substring(0, 4);
-                mes = dataPrimeiraNota.Substring(5, 2);
-            }
+                TotalNotas = dadosNotasFiltradas.Count,
+                Notas = dadosNotasFiltradas
+            };
+ 
+            var opcoesJson = new JsonSerializerOptions { WriteIndented = true };
+            string conteudoJson = JsonSerializer.Serialize(relatorio, opcoesJson);
 
-            string nomeArquivo = $"{mes}{ano}{cnpjCurto}.txt";
-            string caminhoSaida = Path.Combine(@"C:\XmlNfce", nomeArquivo);
+            File.WriteAllText(caminhoSaida, conteudoJson);
 
-            var linhas = new List<string>();
-            linhas.Add($"Total de notas encontradas: {dadosNotasFiltradas.Count}");
-            linhas.Add("");
-
-            foreach (var n in dadosNotasFiltradas)
-            {
-                linhas.Add($"Série {n["Serie"]} | Data {n["Data"]} | Chave {n["Chave"]}");
-            }
-
-            File.WriteAllLines(caminhoSaida, linhas);
-
-            Console.WriteLine($"\nResultado salvo em: {caminhoSaida}");
-    }
+            Console.WriteLine($"Resultado salvo em: {caminhoSaida}");
+        }
 
         static void Main(string[] args)
         {

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\rodri\\OneDrive\\Documentos\\GitHub\\FabricaProj_XML\\xml.csproj": {}
+    "D:\\Estudos\\GitHub\\FabricaProj_XML\\xml.csproj": {}
   },
   "projects": {
-    "C:\\Users\\rodri\\OneDrive\\Documentos\\GitHub\\FabricaProj_XML\\xml.csproj": {
+    "D:\\Estudos\\GitHub\\FabricaProj_XML\\xml.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\rodri\\OneDrive\\Documentos\\GitHub\\FabricaProj_XML\\xml.csproj",
+        "projectUniqueName": "D:\\Estudos\\GitHub\\FabricaProj_XML\\xml.csproj",
         "projectName": "xml",
-        "projectPath": "C:\\Users\\rodri\\OneDrive\\Documentos\\GitHub\\FabricaProj_XML\\xml.csproj",
+        "projectPath": "D:\\Estudos\\GitHub\\FabricaProj_XML\\xml.csproj",
         "packagesPath": "C:\\Users\\rodri\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\rodri\\OneDrive\\Documentos\\GitHub\\FabricaProj_XML\\obj\\",
+        "outputPath": "D:\\Estudos\\GitHub\\FabricaProj_XML\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rodri\\AppData\\Roaming\\NuGet\\NuGet.Config",
