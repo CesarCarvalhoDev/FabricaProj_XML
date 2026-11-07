@@ -11,7 +11,7 @@ namespace FabricaProj_XML.Controllers
     {
         // GET: /api/nfce?competencia=2026-10
         [HttpGet]
-        public ActionResult<List<Nfce>> GetNfce([FromQuery] string competencia)
+        public ActionResult<List<Nfce>> GetNfce([FromQuery] string? competencia)
         {
             var notasFiltradas = _nfceService.FiltrarNfceCompetencia(competencia);
             return Ok(notasFiltradas);
