@@ -1,10 +1,17 @@
+using FabricaProj_XML.Repositories.Interfaces;
+using FabricaProj_XML.Repositories.Implementations;
+using FabricaProj_XML.Services.Interfaces;
+using FabricaProj_XML.Services.Implementations;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Registro das dependências para Injeção de Dependência
+builder.Services.AddScoped<IFileSystemXmlRepository, FileSystemXmlRepository>();
+builder.Services.AddScoped<IXmlParseService, XmlParseService>();
+builder.Services.AddScoped<INfceService, NfceService>();
 
 var app = builder.Build();
 
