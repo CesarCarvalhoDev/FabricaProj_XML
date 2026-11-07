@@ -5,15 +5,14 @@ namespace FabricaProj_XML.Services.Implementations
 {
     public class NfceService(IXmlParseService _xmlParseService) : INfceService
     {
-        public List<Nfce> FiltrarNfceCompetencia(string competencia)
+        public List<Nfce> FiltrarNfceCompetencia(string? competencia)
         {
             List<Nfce> arquivosNfceValidas = _xmlParseService.XmlParse();
-
-            if(arquivosNfceValidas == null || string.IsNullOrWhiteSpace(competencia))
+            
+            if(string.IsNullOrWhiteSpace(competencia))
             {
-                return new List<Nfce>();
+               return arquivosNfceValidas.ToList(); 
             }
-
             return arquivosNfceValidas.Where(n => n.DataEmicao == competencia).ToList();
         }
     }
