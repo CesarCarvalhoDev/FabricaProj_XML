@@ -6,7 +6,7 @@ namespace FabricaProj_XML.Repositories.Implementations
     {
         public string[] BuscarArquivosNfe()
         {
-            string caminhoArquivos = "C:\\Users\\rodri\\Github\\FabricaProj_XML\\xmlaula";
+            string caminhoArquivos = "C:\\XmlNfce";
             if (!Directory.Exists(caminhoArquivos))
             {
                 return Array.Empty<string>();
