@@ -9,6 +9,8 @@
     const btnEdit = document.getElementById('btnEdit');
     const btnSave = document.getElementById('btnSave');
     const btnDownload = document.getElementById('btnDownload');
+    const btnDownloadJson = document.getElementById('btnDownloadJson');
+    const btnConfig = document.getElementById('btnConfig');
 
     // Estado da tela
     let jsonSalvo = '';              // último JSON válido (da API ou salvo após edição)
@@ -22,10 +24,12 @@
     }
 
     function atualizarBotoes() {
+        const podeBaixar = temDados && !editando;
         btnEdit.disabled = !temDados;
         btnEdit.textContent = editando ? 'Cancel' : 'Edit';
         btnSave.disabled = !(temDados && editando);
-        btnDownload.disabled = !(temDados && !editando);
+        btnDownload.disabled = !podeBaixar;
+        btnDownloadJson.disabled = !podeBaixar;
     }
 
     function entrarModoEdicao() {
@@ -42,9 +46,67 @@
         atualizarBotoes();
     }
 
+    // ---------- Validação centralizada de JSON ----------
+    function validarJson(conteudo) {
+        if (!conteudo || !conteudo.trim()) {
+            return { valido: false, erro: 'O conteúdo JSON está vazio.' };
+        }
+
+        try {
+            const dados = JSON.parse(conteudo);
+            return {
+                valido: true,
+                dados,
+                formatado: JSON.stringify(dados, null, 2)
+            };
+        } catch (erro) {
+            return {
+                valido: false,
+                erro: `JSON inválido: ${erro.message}`
+            };
+        }
+    }
+
+    // ---------- Nome e geração do arquivo ----------
+    // Nome no padrão do app de console: MMAAAA + 5 primeiros dígitos do CNPJ
+    function nomeDoArquivo(dados, extensao) {
+        const primeiroItem = Array.isArray(dados) ? dados[0] : dados;
+        const cnpj = String(primeiroItem?.cnpjEmitente ?? '').slice(0, 5);
+        const [ano, mes] = competenciaConsultada.split('-');
+
+        if (ano && mes && cnpj) {
+            return `${mes}${ano}${cnpj}.${extensao}`;
+        }
+
+        return `nfce.${extensao}`;
+    }
+
+    function baixarArquivo(extensao, mimeType) {
+        const validacao = validarJson(jsonSalvo);
+
+        if (!validacao.valido) {
+            setStatus(validacao.erro, 'erro');
+            return;
+        }
+
+        const nomeArquivo = nomeDoArquivo(validacao.dados, extensao);
+        const blob = new Blob([validacao.formatado], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = nomeArquivo;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        setStatus(`Arquivo ${nomeArquivo} gerado com sucesso.`, 'ok');
+    }
+
     // ---------- Buscar: GET /api/nfce?competencia=aaaa-MM ----------
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // evita recarregar a página
+        e.preventDefault();
 
         if (editando && textarea.value !== jsonSalvo &&
             !confirm('Existem edições não salvas. Deseja descartá-las e buscar novamente?')) {
@@ -83,6 +145,7 @@
         } catch (erro) {
             console.error(erro);
             temDados = false;
+            jsonSalvo = '';
             textarea.value = '';
             sairModoEdicao();
             setStatus(erro instanceof TypeError
@@ -106,45 +169,30 @@
 
     // ---------- Save ----------
     btnSave.addEventListener('click', () => {
-        try {
-            const objeto = JSON.parse(textarea.value); // valida o JSON editado
-            jsonSalvo = JSON.stringify(objeto, null, 2);
-            textarea.value = jsonSalvo;
-            sairModoEdicao();
-            setStatus('Alterações salvas. Use Download .txt para baixar o arquivo.', 'ok');
-        } catch (erro) {
-            setStatus(`JSON inválido: ${erro.message}`, 'erro');
+        const validacao = validarJson(textarea.value);
+
+        if (!validacao.valido) {
+            setStatus(validacao.erro, 'erro');
+            return;
         }
+
+        jsonSalvo = validacao.formatado;
+        textarea.value = jsonSalvo;
+        sairModoEdicao();
+        setStatus('Alterações salvas. O JSON está válido e pronto para download.', 'ok');
     });
 
-    // ---------- Download .txt ----------
-    // Nome no padrão do app de console: MMAAAA + 5 primeiros dígitos do CNPJ
-    function nomeDoArquivo() {
-        try {
-            const lista = JSON.parse(jsonSalvo);
-            const cnpj = String(lista[0]?.cnpjEmitente ?? '').slice(0, 5);
-            const [ano, mes] = competenciaConsultada.split('-');
-            if (ano && mes && cnpj) return `${mes}${ano}${cnpj}.txt`;
-        } catch { /* usa o nome padrão */ }
-        return 'nfce.txt';
-    }
-
+    // ---------- Downloads ----------
     btnDownload.addEventListener('click', () => {
-        const blob = new Blob([jsonSalvo], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
+        baixarArquivo('txt', 'text/plain;charset=utf-8');
+    });
 
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = nomeDoArquivo(); // sempre .txt
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        setTimeout(() => URL.revokeObjectURL(url), 0);
+    btnDownloadJson.addEventListener('click', () => {
+        baixarArquivo('json', 'application/json;charset=utf-8');
     });
 
     // Ícone de configurações (sem função por enquanto)
-    document.getElementById('btnConfig').addEventListener('click', () => { /* reservado */ });
+    btnConfig?.addEventListener('click', () => { /* reservado */ });
 
     atualizarBotoes();
 })();
