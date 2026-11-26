@@ -15,7 +15,7 @@ namespace FabricaProj_XML.Services.Implementations
                 return new List<Nfce>();
 
             string[] arquivosValidosNfce = arquivosNfe
-                .Where(arquivoNfe => EhModeloValido(arquivoNfe) && EhNotaAutorizada(arquivoNfe) && PossuiDestinatarioInformado(arquivoNfe))
+                .Where(arquivoNfe => EhModeloValido(arquivoNfe) && EhNotaAutorizada(arquivoNfe) && !PossuiDestinatarioInformado(arquivoNfe))
                 .ToArray();
 
             foreach (string arquivoValidoNfce in arquivosValidosNfce)
